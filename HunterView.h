@@ -38,7 +38,7 @@
 #define LIFE_LOSS_TRAP_ENCOUNTER        2
 #define LIFE_LOSS_DRACULA_ENCOUNTER     4
 #define LIFE_GAIN_REST                  3
-     
+
 typedef struct hunterView *HunterView;
 
 typedef int PlayerID;
@@ -80,13 +80,13 @@ PlayerID getCurrentPlayer (HunterView currentView);
 
 //Get the current score
 // Returns a positive integer [0...366]
-int getScore(HunterView currentView);
+int getScore (HunterView currentView);
 
 // Get the current health points for a given player
 // 'player' specifies which players's life/blood points to return
 // and must be a value in the interval [0...4] (see 'player' type)
 
-int getHealth(HunterView currentView, PlayerID player);
+int getHealth (HunterView currentView, PlayerID player);
 
 // Get the current location id of a given player
 // May be UNKNOWN_LOCATION if the player has not had a turn yet
@@ -107,7 +107,7 @@ int getHealth(HunterView currentView, PlayerID player);
 //                    e.g. DOUBLE_BACK_1 is the last place place he visited
 //   TELEPORT         if Dracula apparated back to Castle Dracula
 //   LOCATION_UNKNOWN if the round number is 0
-LocationID getLocation(HunterView currentView, PlayerID player);
+LocationID getLocation (HunterView currentView, PlayerID player);
 
 //Functions that return information about the history of the game
 
@@ -143,7 +143,7 @@ void getHistory (HunterView currentView, PlayerID player,LocationID trail[TRAIL_
 //Your function must take into account that dracula can't move to the hospital or travel by rail
 //but need not take into account draculas trail
 //The destination 'from' should be included.
-LocationID * connectedLocations(HunterView currentView, int * numLocations, LocationID from,
+LocationID* connectedLocations (HunterView currentView, int * numLocations, LocationID from,
                                 PlayerID player, Round round, int road, int rail, int sea);
 
 #endif
