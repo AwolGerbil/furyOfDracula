@@ -11,7 +11,7 @@
 #define unknownMove(X) (X == UNKNOWN_LOCATION)
 
 static int startLoc (int player);
-static int bFS (int dest, int curr, int player);
+static int bFS (HunterView gameState, int dest, int curr, int player);
 static int randomLoc (HunterView gameState, int playerLoc, int player);
 static char* locCode (int locNum);
 
@@ -37,7 +37,7 @@ void decideMove (HunterView gameState) {
     int draculaLoc = getLocation(gameState, PLAYER_DRACULA);
     if (unknownMove(bestMove)
         && draculaLoc >= ALICANTE && draculaLoc <= ZURICH) {
-        bestMove = bFS(draculaLoc, player);
+        bestMove = bFS(gameState, draculaLoc, plaerLoc, player);
     }
 
     // Cannot research yet
@@ -59,11 +59,46 @@ static int startLoc (int player) {
     return startLocs[player];
 }
 
-static int bFS (int dest, int curr, int player) {
-    /* TODO */
-    return curr;
-}
+static int bFS (HunterView gameState, int dest, int curr, int player) {
 
+    Queue Q = newQueue();
+
+    int visited[NUM_MAP_LOCATIONS];
+    int pre[NUM_MAP_LOCATIONS];
+    int i;
+    for(i=0;i<NUM_MAP_LOCATIONS;i++){
+        visited[i] = 0;
+        pre[i] = 0;
+    }
+
+    int numAdj;
+
+    int v;
+    while(!QueueisEmpty(Q)){
+        v = QueueLeave(Q);
+        if(v == dest){
+            while(1){
+                v = pre[v];
+                if (pre[v] == curr){
+                    return v;
+                }
+            }
+        }
+        int *adj = connectedLocations(gameState, &numAdj, v, player, getRound(gameState), 1, 1, 1);
+        for(i=0;i<numAdj;i++){
+            if(!visited[adj[i]]){
+                pre[adj[i]] = v;
+                visited[adj[i]] = 1;
+                QueueJoin(Q, adj[i]);
+            }
+        }
+
+    }
+
+    //We should never get here...
+    return UNKNOWN_LOCATION;
+
+}
 static int randomLoc (HunterView gameState, int playerLoc, int player) {
     int numLocations;
     int* adjLocs = connectedLocations(gameState, &numLocations,
