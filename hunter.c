@@ -6,6 +6,7 @@
 #include "game.h"
 #include "HunterView.h"
 #include "hunter.h"
+#include "Queue.h"
 
 #define unknownMove(X) (X == UNKNOWN_LOCATION)
 
@@ -64,9 +65,9 @@ static int bFS (int dest, int curr, int player) {
 }
 
 static int randomLoc (HunterView gameState, int playerLoc, int player) {
-    int numLocs;
-    int* adjLocs = connectedLocations(gameState, numLocations,
-                                      location, player,
+    int numLocations;
+    int* adjLocs = connectedLocations(gameState, &numLocations,
+                                      playerLoc, player,
                                       getRound(gameState),
                                       1, 1, 0);
     return adjLocs[rand() % numLocations];
