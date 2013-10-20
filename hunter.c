@@ -37,7 +37,7 @@ void decideMove (HunterView gameState) {
     int draculaLoc = getLocation(gameState, PLAYER_DRACULA);
     if (unknownMove(bestMove)
         && draculaLoc >= ALICANTE && draculaLoc <= ZURICH) {
-        bestMove = bFS(gameState, draculaLoc, plaerLoc, player);
+        bestMove = bFS(gameState, draculaLoc, playerLoc, player);
     }
 
     // Cannot research yet
