@@ -74,7 +74,7 @@ static int bFS (HunterView gameState, int dest, int curr, int player) {
     int numAdj;
 
     int v;
-    while(!QueueisEmpty(Q)){
+    while(!QueueIsEmpty(Q)){
         v = QueueLeave(Q);
         if(v == dest){
             while(1){
