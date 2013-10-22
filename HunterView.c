@@ -74,6 +74,8 @@ HunterView newHunterView (char* pastPlays, playerMessage messages[]) {
 
     //Initialise location, health and score:
     hv->score = GAME_START_SCORE;
+    
+
     for (i=0;i<NUM_PLAYERS;i++) {
         if (i == PLAYER_DRACULA) {
             hv->health[i][0] = GAME_START_BLOOD_POINTS;
@@ -82,16 +84,12 @@ HunterView newHunterView (char* pastPlays, playerMessage messages[]) {
         }
         hv->location[i][0] = UNKNOWN_LOCATION;
     }
-
+    
     // Iterate through Player Turns
     int turn, round;
 
     for (turn = 0; turn < hv->turns; turn++) {
-        round = ((turn) / 5) + 1;
-
-        if (round >= 1 && turn % NUM_PLAYERS == 0) {
-            hv->health[PLAYER_DRACULA][round] = hv->health[PLAYER_DRACULA][round-1];
-        }
+        round = ((turn) / 5);
 
         if (turn % NUM_PLAYERS == PLAYER_DRACULA) { // Dracula's Move
             draculaMove(hv, &pastPlays[turn * 8], round);
@@ -140,6 +138,12 @@ static void draculaMove (HunterView hv, char* play, int round) {
     // Check whether its actually Dracula's Play
     assert(play[0] == 'D');
 
+    if (round >= 1) {
+        hv->health[PLAYER_DRACULA][round] = hv->health[PLAYER_DRACULA][round-1];
+    }else{
+        hv->health[PLAYER_DRACULA][round] = GAME_START_BLOOD_POINTS;
+    }
+
     // Update Score for Dracula's Turn
     hv -> score -= SCORE_LOSS_DRACULA_TURN;
 
@@ -181,6 +185,7 @@ static void draculaMove (HunterView hv, char* play, int round) {
     if (play[5] == 'V') {
         hv->score -= SCORE_LOSS_VAMPIRE_MATURES;
     }
+
 }
 
 // Interprets Hunter's Move
@@ -216,7 +221,12 @@ static void hunterMove (HunterView hv, char* play, int round) {
     }
 
     //Initialise health to previous turn's health
-    hv->health[hunter][round] = hv->health[hunter][round-1];
+    if(round >= 1){
+        hv->health[hunter][round] = hv->health[hunter][round-1];
+    }else{
+        hv->health[hunter][round] = GAME_START_HUNTER_LIFE_POINTS;
+    }
+    
 
     // Update Move and Location for Hunter's Turn
     char buffer[3];
@@ -226,11 +236,12 @@ static void hunterMove (HunterView hv, char* play, int round) {
     char currLocation = locNum(buffer);
 
     char currMove = currLocation;
-    if (round && currLocation == hv->location[hunter][round - 1]) {
+    if (round >= 1 && currLocation == hv->location[hunter][round - 1]) {
         currMove = REST;
     }
 
     hv->move[hunter][round] = currMove;
+
     hv->location[hunter][round] = currLocation;
 
     // Update Health if Resting
@@ -247,7 +258,7 @@ static void hunterMove (HunterView hv, char* play, int round) {
             hv->health[hunter][round] -= LIFE_LOSS_TRAP_ENCOUNTER;
         } else if (play[i] == 'D') {
             hv->health[hunter][round] -= LIFE_LOSS_DRACULA_ENCOUNTER;
-            hv->health[PLAYER_DRACULA][round] -= LIFE_LOSS_HUNTER_ENCOUNTER;
+            hv->health[PLAYER_DRACULA][round - 1] -= LIFE_LOSS_HUNTER_ENCOUNTER;
         } else if (play[i] == '.') {
             break;
         }
@@ -336,19 +347,33 @@ int getScore (HunterView currentView) {
 }
 
 int getHealth (HunterView currentView, PlayerID player) {
-    return currentView->health[player][getRound(currentView)];
+    
+    if(playerTurns(currentView, player) == 0){
+        if (player == PLAYER_DRACULA){
+            return GAME_START_BLOOD_POINTS;
+        }else{
+            return GAME_START_HUNTER_LIFE_POINTS;
+        }
+    }else{
+        return currentView->health[player][playerTurns(currentView, player) - 1];
+    }
+
 }
 
 LocationID getLocation(HunterView currentView, PlayerID player) {
-    if (player >= PLAYER_LORD_GODALMING
-        && player <= PLAYER_MINA_HARKER) { // If Player is a Hunter
-        if (currentView->isInHospital[player][playerTurns(currentView, player)]) {
+
+    if(playerTurns(currentView, player) == 0){
+        return UNKNOWN_LOCATION;
+    }
+
+    if (player == PLAYER_DRACULA) { 
+        return currentView->move[player][playerTurns(currentView, player) - 1];
+    } else { 
+        if (currentView->isInHospital[player][playerTurns(currentView, player) - 1]) {
             return ST_JOSEPH_AND_ST_MARYS;
         } else {
-            return currentView->location[player][playerTurns(currentView, player)];
+            return currentView->location[player][playerTurns(currentView, player) - 1];
         }
-    } else { // If Player is Dracula
-        return currentView->move[player][playerTurns(currentView, player)];
     }
 }
 
@@ -365,9 +390,9 @@ void getHistory (HunterView currentView, PlayerID player,
         if (i >= pTurns) { // Not enough Turns played
             trail[i] = UNKNOWN_LOCATION;
         } else if (player == PLAYER_DRACULA) { // Dracula
-            trail[i] = currentView->move[player][pTurns - i];
+            trail[i] = currentView->move[player][pTurns - i - 1];
         } else { // Hunter
-            trail[i] = currentView->location[player][pTurns - i];
+            trail[i] = currentView->location[player][pTurns - i -1 ];
         }
     }
 }
@@ -398,7 +423,7 @@ LocationID* connectedLocations (HunterView currentView,
     *numLocations = 0;
     for (i=0;i<NUM_MAP_LOCATIONS;i++) {
         if(locs[i] != -1){
-            *numLocations++;
+            (*numLocations)++;
         }
     }
 
@@ -1057,6 +1082,4 @@ static void makeGraph (HunterView hv){
     addLink(hv, AMSTERDAM, NORTH_SEA, SEA);
     addLink(hv, HAMBURG, NORTH_SEA, SEA);
 }
-
-
 
