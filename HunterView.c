@@ -307,12 +307,12 @@ static void addLink (HunterView hv, int start, int finish, int type) {
 
 static int playerTurns (HunterView hv, int player) {
     
-    if (getCurrentPlayer(hv) < player){
+    if (player < getCurrentPlayer(hv)){
         //If the player has not played in this round:
-        return getRound(hv);
+        return getRound(hv) + 1;
     }else{
         //Player has played in this round:
-        return getRound(hv) + 1; 
+        return getRound(hv); 
     }
     
 }
