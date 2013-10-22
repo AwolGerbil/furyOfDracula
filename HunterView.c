@@ -306,16 +306,15 @@ static void addLink (HunterView hv, int start, int finish, int type) {
 }
 
 static int playerTurns (HunterView hv, int player) {
-    if (getRound(hv) == 0) {
-        return 0;
+    
+    if (getCurrentPlayer(hv) < player){
+        //If the player has not played in this round:
+        return getRound(hv);
+    }else{
+        //Player has played in this round:
+        return getRound(hv) + 1; 
     }
-
-    int retVal = getRound(hv);
-    if (((getCurrentPlayer(hv) + 4) % 5) < player) {
-        retVal--;
-    }
-
-    return retVal;
+    
 }
 
 // Frees all memory previously allocated for the HunterView
@@ -325,11 +324,7 @@ void disposeHunterView (HunterView toBeDeleted) {
 }
 
 Round getRound (HunterView currentView) {
-    if(currentView->turns == 0){
-        return 0;
-    }
-
-    return ((currentView->turns - 1) / 5) + 1;
+    return (currentView->turns/5);
 }
 
 PlayerID getCurrentPlayer (HunterView currentView) {
