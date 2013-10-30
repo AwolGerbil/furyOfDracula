@@ -129,7 +129,11 @@ LocationID getLocation (HunterView currentView, PlayerID player);
 // {29, 12, -1, -1, -1, -1}
 // This would mean in the first move the player started on location 12
 // then moved to the current location of 29
-void getHistory (HunterView currentView, PlayerID player,LocationID trail[TRAIL_SIZE]);
+void getHistory (HunterView currentView, PlayerID player,
+                 LocationID trail[TRAIL_SIZE]);
+
+void getMegaHistory (HunterView currentView, PlayerID player,
+                     LocationID trail[MEGA_TRAIL_SIZE]);
 
 //Functions that query the map to find information about connectivity
 

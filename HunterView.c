@@ -11,6 +11,7 @@
 #define RAIL 1
 #define SEA 2
 #define LAND_RAIL 3
+#define MEGA_TRAIL_SIZE 15
 
 // #define's for previously defined numbers (but too long)
 // DB = Double Back
@@ -74,7 +75,7 @@ HunterView newHunterView (char* pastPlays, playerMessage messages[]) {
 
     //Initialise location, health and score:
     hv->score = GAME_START_SCORE;
-    
+
 
     for (i=0;i<NUM_PLAYERS;i++) {
         if (i == PLAYER_DRACULA) {
@@ -84,7 +85,7 @@ HunterView newHunterView (char* pastPlays, playerMessage messages[]) {
         }
         hv->location[i][0] = UNKNOWN_LOCATION;
     }
-    
+
     // Iterate through Player Turns
     int turn, round;
 
@@ -226,7 +227,7 @@ static void hunterMove (HunterView hv, char* play, int round) {
     }else{
         hv->health[hunter][round] = GAME_START_HUNTER_LIFE_POINTS;
     }
-    
+
 
     // Update Move and Location for Hunter's Turn
     char buffer[3];
@@ -317,15 +318,13 @@ static void addLink (HunterView hv, int start, int finish, int type) {
 }
 
 static int playerTurns (HunterView hv, int player) {
-    
     if (player < getCurrentPlayer(hv)){
         //If the player has not played in this round:
         return getRound(hv) + 1;
     }else{
         //Player has played in this round:
-        return getRound(hv); 
+        return getRound(hv);
     }
-    
 }
 
 // Frees all memory previously allocated for the HunterView
@@ -347,7 +346,7 @@ int getScore (HunterView currentView) {
 }
 
 int getHealth (HunterView currentView, PlayerID player) {
-    
+
     if(playerTurns(currentView, player) == 0){
         if (player == PLAYER_DRACULA){
             return GAME_START_BLOOD_POINTS;
@@ -366,9 +365,9 @@ LocationID getLocation(HunterView currentView, PlayerID player) {
         return UNKNOWN_LOCATION;
     }
 
-    if (player == PLAYER_DRACULA) { 
+    if (player == PLAYER_DRACULA) {
         return currentView->move[player][playerTurns(currentView, player) - 1];
-    } else { 
+    } else {
         if (currentView->isInHospital[player][playerTurns(currentView, player) - 1]) {
             return ST_JOSEPH_AND_ST_MARYS;
         } else {
@@ -387,6 +386,26 @@ void getHistory (HunterView currentView, PlayerID player,
 
     // Backtrace into stored locations
     for (i = 0; i < TRAIL_SIZE; i++) {
+        if (i >= pTurns) { // Not enough Turns played
+            trail[i] = UNKNOWN_LOCATION;
+        } else if (player == PLAYER_DRACULA) { // Dracula
+            trail[i] = currentView->move[player][pTurns - i - 1];
+        } else { // Hunter
+            trail[i] = currentView->location[player][pTurns - i -1 ];
+        }
+    }
+}
+
+void getMegaHistory (HunterView currentView, PlayerID player,
+                     LocationID trail[MEGA_TRAIL_SIZE]) {
+    // Random Counter
+    int i;
+
+    // Turns Player has had
+    int pTurns = playerTurns(currentView, player);
+
+    // Backtrace into stored locations
+    for (i = 0; i < MEGA_TRAIL_SIZE; i++) {
         if (i >= pTurns) { // Not enough Turns played
             trail[i] = UNKNOWN_LOCATION;
         } else if (player == PLAYER_DRACULA) { // Dracula
@@ -421,8 +440,8 @@ LocationID* connectedLocations (HunterView currentView,
     }
 
     *numLocations = 0;
-    for (i=0;i<NUM_MAP_LOCATIONS;i++) {
-        if(locs[i] != -1){
+    for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
+        if (locs[i] != -1) {
             (*numLocations)++;
         }
     }
@@ -430,7 +449,7 @@ LocationID* connectedLocations (HunterView currentView,
     LocationID *retVal = malloc(sizeof(LocationID) * (*numLocations));
 
     int j = 0;
-    for (i=0;i<NUM_MAP_LOCATIONS;i++) {
+    for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
         if (locs[i] != -1) {
             retVal[j] = i;
             j++;
@@ -451,7 +470,7 @@ static void canReachInN (HunterView currentView, LocationID start, int locs[], i
 
     int i;
     int edge;
-    for (i=0;i<NUM_MAP_LOCATIONS;i++) {
+    for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
         edge = currentView->adjMatrix[start][i];
         if (n - 1 > locs[i]) {
             if (type == edge

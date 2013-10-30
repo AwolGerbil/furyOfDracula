@@ -10,6 +10,7 @@
 
 #define unknownMove(X) (X == UNKNOWN_LOCATION)
 
+static int lastKnownLoc (HunterView gameState);
 static int startLoc (int player);
 static int bFS (HunterView gameState, int dest, int curr, int player);
 static int randomLoc (HunterView gameState, int playerLoc, int player);
@@ -34,7 +35,7 @@ void decideMove (HunterView gameState) {
     }
 
     // Kill dracula
-    int draculaLoc = getLocation(gameState, PLAYER_DRACULA);
+    int draculaLoc = lastKnownLoc(gameState);
     if (unknownMove(bestMove)
         && draculaLoc >= ALICANTE && draculaLoc <= ZURICH) {
         bestMove = bFS(gameState, draculaLoc, playerLoc, player);
@@ -54,6 +55,20 @@ void decideMove (HunterView gameState) {
     registerBestPlay(locCode(bestMove), "YOLO\n\n\n\n");
 }
 
+static int lastKnownLoc (HunterView gameState) {
+    int trail[15];
+    getMegaHistory(gameState, PLAYER_DRACULA, trail);
+
+    int i;
+    for (i = 0; i < 15; i++) {
+        if ((trail[i] >= ALICANTE && trail[i] <= ZURICH) || trail[i] == SEA_UNKNOWN) {
+            return trail[i];
+        }
+    }
+
+    return UNKNOWN_LOCATION;
+}
+
 static int startLoc (int player) {
     int startLocs[] = {MUNICH, STRASBOURG, SARAGOSSA, KLAUSENBURG};
     return startLocs[player];
@@ -66,7 +81,7 @@ static int bFS (HunterView gameState, int dest, int curr, int player) {
     int visited[NUM_MAP_LOCATIONS];
     int pre[NUM_MAP_LOCATIONS];
     int i;
-    for(i=0;i<NUM_MAP_LOCATIONS;i++){
+    for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
         visited[i] = 0;
         pre[i] = 0;
     }
@@ -74,10 +89,10 @@ static int bFS (HunterView gameState, int dest, int curr, int player) {
     int numAdj;
 
     int v;
-    while(!QueueIsEmpty(Q)){
+    while (!QueueIsEmpty(Q)) {
         v = QueueLeave(Q);
-        if(v == dest){
-            while(1){
+        if (v == dest) {
+            while (1) {
                 v = pre[v];
                 if (pre[v] == curr){
                     return v;
@@ -85,8 +100,8 @@ static int bFS (HunterView gameState, int dest, int curr, int player) {
             }
         }
         int *adj = connectedLocations(gameState, &numAdj, v, player, getRound(gameState), 1, 1, 1);
-        for(i=0;i<numAdj;i++){
-            if(!visited[adj[i]]){
+        for (i = 0; i < numAdj; i++) {
+            if (!visited[adj[i]]) {
                 pre[adj[i]] = v;
                 visited[adj[i]] = 1;
                 QueueJoin(Q, adj[i]);
