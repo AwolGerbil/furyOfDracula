@@ -11,7 +11,6 @@
 #define RAIL 1
 #define SEA 2
 #define LAND_RAIL 3
-#define MEGA_TRAIL_SIZE 15
 
 // #define's for previously defined numbers (but too long)
 // DB = Double Back
@@ -49,6 +48,9 @@ typedef struct hunterView {
     // Location Tracker
     char location[NUM_PLAYERS][MAX_ROUNDS];
 
+    // Dracula Tracker
+    char possLoc[2][NUM_MAP_LOCATIONS];
+
     // Hospital Tracker
     char isInHospital[NUM_PLAYERS-1][MAX_ROUNDS];
 
@@ -76,14 +78,17 @@ HunterView newHunterView (char* pastPlays, playerMessage messages[]) {
     //Initialise location, health and score:
     hv->score = GAME_START_SCORE;
 
-
-    for (i=0;i<NUM_PLAYERS;i++) {
+    for (i = 0; i < NUM_PLAYERS; i++) {
         if (i == PLAYER_DRACULA) {
             hv->health[i][0] = GAME_START_BLOOD_POINTS;
         } else {
             hv->health[i][0] = GAME_START_HUNTER_LIFE_POINTS;
         }
         hv->location[i][0] = UNKNOWN_LOCATION;
+    }
+
+    for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
+        hv->possLoc[0][i] = 1;
     }
 
     // Iterate through Player Turns
@@ -139,9 +144,13 @@ static void draculaMove (HunterView hv, char* play, int round) {
     // Check whether its actually Dracula's Play
     assert(play[0] == 'D');
 
+    // Random Counters
+    int i, j;
+
+    // Update health for the round
     if (round >= 1) {
         hv->health[PLAYER_DRACULA][round] = hv->health[PLAYER_DRACULA][round-1];
-    }else{
+    } else {
         hv->health[PLAYER_DRACULA][round] = GAME_START_BLOOD_POINTS;
     }
 
@@ -171,6 +180,58 @@ static void draculaMove (HunterView hv, char* play, int round) {
     }
     hv->location[PLAYER_DRACULA][round] = currLocation;
 
+    // Copy Dracula Tracker
+    for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
+        hv->possLoc[1][i] = hv->possLoc[0][i];
+    }
+
+    int* connLoc;
+    int numLoc;
+
+    // Update Dracula Tracker
+    if (currLocation >= ALICANTE && currLocation <= BLACK_SEA) {
+        for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
+            hv->possLoc[0][i] = 0;
+        }
+
+        hv->possLoc[0][currLocation] = 1;
+    } else {
+        // Expand out
+        for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
+            if (hv->possLoc[1][i]) {
+                hv->possLoc[0][i] = hv->possLoc[1][i] + 1;
+
+                connLoc = connectedLocations(hv, numLoc, hv->possLoc[1][i], PLAYER_DRACULA, 0, 1, 0, 1);
+                for (j = 0; j < numLoc; j++) {
+                    if (!hv->possLoc[1][connLoc[j]]) {
+                        hv->possLoc[0][connLoc[j]] = 1;
+                    }
+                }
+                free(connLoc);
+            }
+        }
+
+        // Trim to Land or Sea
+        if (currLocation == CITY_UNKNOWN) {
+            for (i = NORTH_SEA; i <= BLACK_SEA; i++) {
+                hv->possLoc[0][i] = 0;
+            }
+        } else if (currLocation == SEA_UNKNOWN) {
+            for (i = ALICANTE; i <= ZURICH; i++) {
+                hv->possLoc[0][i] = 0;
+            }
+        }
+
+        // Remove Trail
+        int history[TRAIL_SIZE];
+        getHistory(hv, PLAYER_DRACULA, history);
+        for (i = 0; i < TRAIL_SIZE; i++) {
+            if (history[i] >= ALICANTE && history[i] <= BLACK_SEA) {
+                hv->possLoc[0][history[i]] = 0;
+            }
+        }
+    }
+
     // Update Dracula's Health if at Sea
     if ((currLocation >= NORTH_SEA && currLocation <= BLACK_SEA)
         || currLocation == SEA_UNKNOWN) {
@@ -186,7 +247,6 @@ static void draculaMove (HunterView hv, char* play, int round) {
     if (play[5] == 'V') {
         hv->score -= SCORE_LOSS_VAMPIRE_MATURES;
     }
-
 }
 
 // Interprets Hunter's Move
@@ -222,12 +282,11 @@ static void hunterMove (HunterView hv, char* play, int round) {
     }
 
     //Initialise health to previous turn's health
-    if(round >= 1){
+    if (round >= 1) {
         hv->health[hunter][round] = hv->health[hunter][round-1];
-    }else{
+    } else {
         hv->health[hunter][round] = GAME_START_HUNTER_LIFE_POINTS;
     }
-
 
     // Update Move and Location for Hunter's Turn
     char buffer[3];
@@ -302,7 +361,6 @@ static char locNum (char* locCode) {
 
 // Adds Edges
 static void addLink (HunterView hv, int start, int finish, int type) {
-
     assert(start < NUM_MAP_LOCATIONS && finish < NUM_MAP_LOCATIONS);
     assert(type >= LAND && type <= SEA);
 
@@ -318,10 +376,10 @@ static void addLink (HunterView hv, int start, int finish, int type) {
 }
 
 static int playerTurns (HunterView hv, int player) {
-    if (player < getCurrentPlayer(hv)){
+    if (player < getCurrentPlayer(hv)) {
         //If the player has not played in this round:
         return getRound(hv) + 1;
-    }else{
+    } else {
         //Player has played in this round:
         return getRound(hv);
     }
@@ -347,21 +405,19 @@ int getScore (HunterView currentView) {
 
 int getHealth (HunterView currentView, PlayerID player) {
 
-    if(playerTurns(currentView, player) == 0){
+    if (playerTurns(currentView, player) == 0) {
         if (player == PLAYER_DRACULA){
             return GAME_START_BLOOD_POINTS;
         }else{
             return GAME_START_HUNTER_LIFE_POINTS;
         }
-    }else{
+    } else {
         return currentView->health[player][playerTurns(currentView, player) - 1];
     }
-
 }
 
 LocationID getLocation(HunterView currentView, PlayerID player) {
-
-    if(playerTurns(currentView, player) == 0){
+    if (playerTurns(currentView, player) == 0) {
         return UNKNOWN_LOCATION;
     }
 
@@ -408,21 +464,19 @@ void getMegaHistory (HunterView currentView, PlayerID player,
     for (i = 0; i < MEGA_TRAIL_SIZE; i++) {
         if (i >= pTurns) { // Not enough Turns played
             trail[i] = UNKNOWN_LOCATION;
-        } else if (player == PLAYER_DRACULA) { // Dracula
-            trail[i] = currentView->move[player][pTurns - i - 1];
-        } else { // Hunter
+        } else { // Anyone
             trail[i] = currentView->location[player][pTurns - i -1 ];
         }
     }
 }
 
 LocationID* connectedLocations (HunterView currentView,
-                               int * numLocations, LocationID from,
+                               int* numLocations, LocationID from,
                                PlayerID player, Round round,
                                int road, int rail, int sea) {
     int locs[NUM_MAP_LOCATIONS];
     int i;
-    for(i=0;i<NUM_MAP_LOCATIONS;i++){
+    for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
         locs[i] = -1;
     }
 
@@ -459,8 +513,8 @@ LocationID* connectedLocations (HunterView currentView,
     return retVal;
 }
 
-//Locs stores the min. number of moves to get to a location
-//-1 if unreachable, 0 if reachable in n, ...
+// Locs stores the min. number of moves to get to a location
+// -1 if unreachable, 0 if reachable in n, ...
 static void canReachInN (HunterView currentView, LocationID start, int locs[], int n, int type) {
     locs[start] = n;
 
@@ -482,7 +536,15 @@ static void canReachInN (HunterView currentView, LocationID start, int locs[], i
     }
 }
 
+LocationID* possibleLocations (HunterView currentView) {
+    int* retVal = malloc(NUM_MAP_LOCATIONS * sizeof(int));
+    int i;
+    for (i = 0; i < NUM_LOCATIONS; i++) {
+        retVal[i] = currentView->possLoc[0][i];
+    }
 
+    return retVal;
+}
 
 static void makeGraph (HunterView hv){
     /* ROAD Connections*/
@@ -997,26 +1059,25 @@ static void makeGraph (HunterView hv){
 
     /* SEA Connections */
 
-
     // NORTH_SEA
     addLink(hv, NORTH_SEA, ATLANTIC_OCEAN, SEA);
     addLink(hv, NORTH_SEA, ENGLISH_CHANNEL, SEA);
-    addLink(hv, NORTH_SEA, EDINBURGH, SEA);
     addLink(hv, NORTH_SEA, AMSTERDAM, SEA);
+    addLink(hv, NORTH_SEA, EDINBURGH, SEA);
     addLink(hv, NORTH_SEA, HAMBURG, SEA);
 
     // ENGLISH_CHANNEL
     addLink(hv, ENGLISH_CHANNEL, ATLANTIC_OCEAN, SEA);
     addLink(hv, ENGLISH_CHANNEL, NORTH_SEA, SEA);
     addLink(hv, ENGLISH_CHANNEL, LE_HAVRE, SEA);
-    addLink(hv, ENGLISH_CHANNEL, PLYMOUTH, SEA);
     addLink(hv, ENGLISH_CHANNEL, LONDON, SEA);
+    addLink(hv, ENGLISH_CHANNEL, PLYMOUTH, SEA);
 
     // IRISH_SEA
     addLink(hv, IRISH_SEA, ATLANTIC_OCEAN, SEA);
+    addLink(hv, IRISH_SEA, DUBLIN, SEA);
     addLink(hv, IRISH_SEA, LIVERPOOL, SEA);
     addLink(hv, IRISH_SEA, SWANSEA, SEA);
-    addLink(hv, IRISH_SEA, DUBLIN, SEA);
 
     // ATLANTIC_OCEAN
     addLink(hv, ATLANTIC_OCEAN, NORTH_SEA, SEA);
@@ -1025,48 +1086,48 @@ static void makeGraph (HunterView hv){
     addLink(hv, ATLANTIC_OCEAN, ENGLISH_CHANNEL, SEA);
     addLink(hv, ATLANTIC_OCEAN, MEDITERRANEAN_SEA, SEA);
     addLink(hv, ATLANTIC_OCEAN, CADIZ, SEA);
-    addLink(hv, ATLANTIC_OCEAN, LISBON, SEA);
     addLink(hv, ATLANTIC_OCEAN, GALWAY, SEA);
+    addLink(hv, ATLANTIC_OCEAN, LISBON, SEA);
 
     // BAY_OF_BISCAY
     addLink(hv, BAY_OF_BISCAY, ATLANTIC_OCEAN, SEA);
     addLink(hv, BAY_OF_BISCAY, BORDEAUX, SEA);
-    addLink(hv, BAY_OF_BISCAY, SANTANDER, SEA);
     addLink(hv, BAY_OF_BISCAY, NANTES, SEA);
+    addLink(hv, BAY_OF_BISCAY, SANTANDER, SEA);
 
     // MEDITERRANEAN_SEA
     addLink(hv, MEDITERRANEAN_SEA, ATLANTIC_OCEAN, SEA);
     addLink(hv, MEDITERRANEAN_SEA, TYRRHENIAN_SEA, SEA);
+    addLink(hv, MEDITERRANEAN_SEA, ALICANTE, SEA);
+    addLink(hv, MEDITERRANEAN_SEA, BARCELONA, SEA);
     addLink(hv, MEDITERRANEAN_SEA, CAGLIARI, SEA);
     addLink(hv, MEDITERRANEAN_SEA, MARSEILLES, SEA);
-    addLink(hv, MEDITERRANEAN_SEA, BARCELONA, SEA);
-    addLink(hv, MEDITERRANEAN_SEA, ALICANTE, SEA);
 
     // TYRRHENIAN SEA
     addLink(hv, TYRRHENIAN_SEA, MEDITERRANEAN_SEA, SEA);
+    addLink(hv, TYRRHENIAN_SEA, IONIAN_SEA, SEA);
     addLink(hv, TYRRHENIAN_SEA, CAGLIARI, SEA);
     addLink(hv, TYRRHENIAN_SEA, GENOA, SEA);
-    addLink(hv, TYRRHENIAN_SEA, ROME, SEA);
     addLink(hv, TYRRHENIAN_SEA, NAPLES, SEA);
-    addLink(hv, TYRRHENIAN_SEA, IONIAN_SEA, SEA);
+    addLink(hv, TYRRHENIAN_SEA, ROME, SEA);
 
     // IONIAN SEA
+    addLink(hv, IONIAN_SEA, TYRRHENIAN_SEA, SEA);
+    addLink(hv, IONIAN_SEA, ADRIATIC_SEA, SEA);
     addLink(hv, IONIAN_SEA, BLACK_SEA, SEA);
-    addLink(hv, IONIAN_SEA, VALONA, SEA);
     addLink(hv, IONIAN_SEA, ATHENS, SEA);
     addLink(hv, IONIAN_SEA, SALONICA, SEA);
-    addLink(hv, IONIAN_SEA, ADRIATIC_SEA, SEA);
-    addLink(hv, IONIAN_SEA, TYRRHENIAN_SEA, SEA);
+    addLink(hv, IONIAN_SEA, VALONA, SEA);
 
     // ADRIATIC SEA
-    addLink(hv, ADRIATIC_SEA, VENICE, SEA);
-    addLink(hv, ADRIATIC_SEA, BARI, SEA);
     addLink(hv, ADRIATIC_SEA, IONIAN_SEA, SEA);
+    addLink(hv, ADRIATIC_SEA, BARI, SEA);
+    addLink(hv, ADRIATIC_SEA, VENICE, SEA);
 
     // BLACK SEA
     addLink(hv, BLACK_SEA, IONIAN_SEA, SEA);
-    addLink(hv, BLACK_SEA, VARNA, SEA);
     addLink(hv, BLACK_SEA, CONSTANTA, SEA);
+    addLink(hv, BLACK_SEA, VARNA, SEA);
 
     /* CITIES->SEA Connections */
 
@@ -1101,4 +1162,3 @@ static void makeGraph (HunterView hv){
     addLink(hv, AMSTERDAM, NORTH_SEA, SEA);
     addLink(hv, HAMBURG, NORTH_SEA, SEA);
 }
-

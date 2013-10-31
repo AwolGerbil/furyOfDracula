@@ -20,6 +20,7 @@
 #define NUM_PLAYERS     5
 
 #define TRAIL_SIZE 6
+#define MEGA_TRAIL_SIZE 10
 
 //Score
 #define GAME_START_SCORE                366
@@ -147,7 +148,9 @@ void getMegaHistory (HunterView currentView, PlayerID player,
 //Your function must take into account that dracula can't move to the hospital or travel by rail
 //but need not take into account draculas trail
 //The destination 'from' should be included.
-LocationID* connectedLocations (HunterView currentView, int * numLocations, LocationID from,
+LocationID* connectedLocations (HunterView currentView, int* numLocations, LocationID from,
                                 PlayerID player, Round round, int road, int rail, int sea);
+
+LocationID* possibleLocations (HunterView currentView);
 
 #endif
