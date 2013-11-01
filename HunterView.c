@@ -29,7 +29,7 @@
 
 static void draculaMove (HunterView hv, char* play, int round);
 static void hunterMove (HunterView hv, char* play, int round);
-static char locNum (char* locCode);
+static int locNum (char* locCode);
 static int playerTurns (HunterView hv, int player);
 
 //Graph-related functions
@@ -162,12 +162,12 @@ static void draculaMove (HunterView hv, char* play, int round) {
     buffer[0] = play[1];
     buffer[1] = play[2];
     buffer[2] = 0;
-    char currMove = locNum(buffer); // Could be Hide/Double Back/TP
+    int currMove = locNum(buffer); // Could be Hide/Double Back/TP
     hv->move[PLAYER_DRACULA][round] = currMove;
 
     // Update Location for Dracula's Turn
-    char currLocation = currMove;
-    char offset = 0;
+    int currLocation = currMove;
+    int offset = 0;
     if (currMove == HIDE || currMove == DOUBLE_BACK_1) {
         offset = 1;
         currLocation = hv->location[PLAYER_DRACULA][round - offset];
@@ -336,7 +336,7 @@ static void hunterMove (HunterView hv, char* play, int round) {
 }
 
 // Converts Location Code to Location Number
-static char locNum (char* locCode) {
+static int locNum (char* locCode) {
     char* locCodes[] = {"AL", "AM", "AT", "BA", "BI", "BE", "BR", "BO",
                         "BU", "BC", "BD", "CA", "CG", "CD", "CF", "CO",
                         "CN", "DU", "ED", "FL", "FR", "GA", "GW", "GE",
@@ -347,7 +347,7 @@ static char locNum (char* locCode) {
                         "VR", "VE", "VI", "ZA", "ZU", "NS", "EC", "IS",
                         "AO", "BB", "MS", "TS", "IO", "AS", "BS", "C?",
                         "S?", "HI", "D1", "D2", "D3", "D4", "D5", "TP"};
-    char retVal;
+    int retVal;
     for (retVal = 0;
          strcmp(locCodes[(int)retVal], locCode) && retVal < NUM_LOCATIONS;
          retVal++);
