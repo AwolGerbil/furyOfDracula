@@ -539,7 +539,7 @@ static void canReachInN (HunterView currentView, LocationID start, int locs[], i
 LocationID* possibleLocations (HunterView currentView) {
     int* retVal = malloc(NUM_MAP_LOCATIONS * sizeof(int));
     int i;
-    for (i = 0; i < NUM_LOCATIONS; i++) {
+    for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
         retVal[i] = currentView->possLoc[0][i];
     }
 
