@@ -88,6 +88,10 @@ static int startLoc (int player) {
 
 static int bFS (HunterView gameState, int dest, int curr, int player) {
 
+    if(curr == dest){
+        return dest;
+    }
+
     Queue Q = newQueue();
 
     int visited[NUM_MAP_LOCATIONS];
@@ -100,17 +104,22 @@ static int bFS (HunterView gameState, int dest, int curr, int player) {
 
     int numAdj;
 
+    QueueJoin(Q, curr);
+
     int v;
     while (!QueueIsEmpty(Q)) {
         v = QueueLeave(Q);
+
         if (v == dest) {
             while (1) {
-                v = pre[v];
                 if (pre[v] == curr){
                     return v;
                 }
+                v = pre[v];
             }
+
         }
+
 
         int *adj = connectedLocations(gameState, &numAdj, v, player, getRound(gameState), 1, 1, 1);
         for (i = 0; i < numAdj; i++) {
@@ -127,6 +136,7 @@ static int bFS (HunterView gameState, int dest, int curr, int player) {
     return UNKNOWN_LOCATION;
 
 }
+
 static int randomLoc (HunterView gameState, int playerLoc, int player) {
     int numLocations;
     int* adjLocs = connectedLocations(gameState, &numLocations,
