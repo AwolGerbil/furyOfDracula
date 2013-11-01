@@ -111,6 +111,7 @@ static int bFS (HunterView gameState, int dest, int curr, int player) {
         v = QueueLeave(Q);
 
         if (v == dest) {
+            dropQueue(Q);
             while (1) {
                 if (pre[v] == curr){
                     return v;
@@ -131,7 +132,7 @@ static int bFS (HunterView gameState, int dest, int curr, int player) {
         }
 
     }
-
+    dropQueue(Q);
     //We should never get here...
     return UNKNOWN_LOCATION;
 
