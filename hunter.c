@@ -130,6 +130,7 @@ static int bFS (HunterView gameState, int dest, int curr, int player) {
                 QueueJoin(Q, adj[i]);
             }
         }
+        free(adj);
 
     }
     dropQueue(Q);
@@ -144,7 +145,9 @@ static int randomLoc (HunterView gameState, int playerLoc, int player) {
                                       playerLoc, player,
                                       getRound(gameState),
                                       1, 1, 0);
-    return adjLocs[rand() % numLocations];
+    int retVal = adjLocs[rand() % numLocations];
+    free(adjLocs);
+    return retVal;
 }
 
 static void findPorts (int possLocs[]) {
