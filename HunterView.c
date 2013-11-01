@@ -201,7 +201,7 @@ static void draculaMove (HunterView hv, char* play, int round) {
             if (hv->possLoc[1][i]) {
                 hv->possLoc[0][i] = hv->possLoc[1][i] + 1;
 
-                connLoc = connectedLocations(hv, numLoc, hv->possLoc[1][i], PLAYER_DRACULA, 0, 1, 0, 1);
+                connLoc = connectedLocations(hv, &numLoc, hv->possLoc[1][i], PLAYER_DRACULA, 0, 1, 0, 1);
                 for (j = 0; j < numLoc; j++) {
                     if (!hv->possLoc[1][connLoc[j]]) {
                         hv->possLoc[0][connLoc[j]] = 1;
