@@ -49,7 +49,7 @@ void decideMove (HunterView gameState) {
         if (draculaLoc >= ALICANTE && draculaLoc <= ZURICH) {
             bestMove = bFS(gameState, draculaLoc, playerLoc, player);
         } else {
-            if (draculaLoc = SEA_UNKNOWN) {
+            if (draculaLoc == SEA_UNKNOWN) {
                 findPorts(possLocs);
             }
 
