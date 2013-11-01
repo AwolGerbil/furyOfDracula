@@ -145,9 +145,9 @@ static int randomLoc (HunterView gameState, int playerLoc, int player) {
                                       playerLoc, player,
                                       getRound(gameState),
                                       1, 1, 0);
-    int retVal = adjLocs[rand() % numLocations];
+    int ret = adjLocs[rand() % numLocations];
     free(adjLocs);
-    return retVal;
+    return ret;
 }
 
 static void findPorts (int possLocs[]) {
