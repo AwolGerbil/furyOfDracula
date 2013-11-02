@@ -6,7 +6,6 @@
 #include "game.h"
 #include "HunterView.h"
 #include "hunter.h"
-#include "Queue.h"
 
 #define unknownMove(X) (X == UNKNOWN_LOCATION)
 
@@ -28,12 +27,14 @@ void decideMove (HunterView gameState) {
 
     // Starting round
     if (!getRound(gameState)) {
+        printf("STARTING ROUND!!!\n");
         bestMove = startLoc(player);
     }
 
     // Rest if low
     if (unknownMove(bestMove)
         && getHealth(gameState, player) < 5) {
+        printf("TOO LOW!!!\n");
         bestMove = playerLoc;
     }
 
@@ -46,10 +47,13 @@ void decideMove (HunterView gameState) {
     int probSum = 0;
     int randNum;
     if (unknownMove(bestMove)) {
+        printf("WHERE ARE YA DRACULA :P\n");
         if (draculaLoc >= ALICANTE && draculaLoc <= ZURICH) {
+            printf("I'M COMING TO GETCHA!!!\n");
             bestMove = bFS(gameState, draculaLoc, playerLoc, player);
         } else {
             if (draculaLoc == SEA_UNKNOWN) {
+                printf("WHY ARE YOU AT SEA???\n");
                 findPorts(possLocs);
             }
 
@@ -61,24 +65,39 @@ void decideMove (HunterView gameState) {
 
             randNum = rand() % probSum;
             for (i = 0; i < NUM_MAP_LOCATIONS && possLocs[i] <= randNum; i++);
+            printf("WHEE, WERE GOING TO %s\n", locCode(i));
+            printf("HOPE THIS BFS WORKS!!!\n");
             bestMove = bFS(gameState, i, playerLoc, player);
         }
     }
 
     free(possLocs);
 
-    // Cannot research yet
-    if (unknownMove(bestMove)
-        && getRound(gameState) < 6) {
-        bestMove = randomLoc(gameState, playerLoc, player);
+    // Last resort
+    if (unknownMove(bestMove)) {
+        // Cannot research yet
+        if (getRound(gameState) < 6) {
+            printf("WOO CAN'T RESEARCH YET\n");
+            bestMove = randomLoc(gameState, playerLoc, player);
+        } else {
+            printf("LETS SIT HERE\n");
+            bestMove = playerLoc;
+        }
     }
-
-    // Research
-    if (unknownMove(bestMove) || possCount > 30) {
+    
+    int trail[MEGA_TRAIL_SIZE];
+    getMegaHistory (gameState, player, trail);
+    
+    for (i = 0; i < MEGA_TRAIL_SIZE && trail[i] > 70; i++);
+    
+    if (i >= 10) {
+        printf("LETS RESEARCH");
         bestMove = playerLoc;
     }
 
-    registerBestPlay(locCode(bestMove), "YOLO\n\n\n\n");
+    printf("HERES MY TURN!!!\n");
+    //registerBestPlay(locCode(bestMove), "hmmmm");
+    printf("%s, hmmm\n", locCode(bestMove));
 }
 
 static int startLoc (int player) {
@@ -87,56 +106,53 @@ static int startLoc (int player) {
 }
 
 static int bFS (HunterView gameState, int dest, int curr, int player) {
-
-    if(curr == dest){
+    if (curr == dest) {
         return dest;
     }
 
-    Queue Q = newQueue();
-
-    int visited[NUM_MAP_LOCATIONS];
-    int pre[NUM_MAP_LOCATIONS];
+    // Random Counter
     int i;
-    for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
-        visited[i] = 0;
-        pre[i] = 0;
-    }
 
+    // Set pre array
+    int pre[NUM_MAP_LOCATIONS];
+    for (i = 0; i < NUM_MAP_LOCATIONS; i++) pre[i] = UNKNOWN_LOCATION;
+
+    int queue[NUM_MAP_LOCATIONS];
+    int front = 0;
+    int size = 0;
+
+    pre[curr] = curr;
+    queue[front + size] = curr;
+    size++;
+
+    int* adj;
     int numAdj;
 
-    QueueJoin(Q, curr);
+    int location;
+    while (size) {
+        location = queue[front];
+        front++;
+        size--;
 
-    int v;
-    while (!QueueIsEmpty(Q)) {
-        v = QueueLeave(Q);
-
-        if (v == dest) {
-            dropQueue(Q);
-            while (1) {
-                if (pre[v] == curr){
-                    return v;
-                }
-                v = pre[v];
-            }
-
+        // If destination found, backtrace to next ideal location
+        if (location == dest) {
+            for (; pre[location] != curr; location = pre[location]);
+            return location;
         }
 
-
-        int *adj = connectedLocations(gameState, &numAdj, v, player, getRound(gameState), 1, 1, 1);
+        adj = connectedLocations(gameState, &numAdj, location, player, getRound(gameState), 1, 1, 0);
         for (i = 0; i < numAdj; i++) {
-            if (!visited[adj[i]]) {
-                pre[adj[i]] = v;
-                visited[adj[i]] = 1;
-                QueueJoin(Q, adj[i]);
+            if (pre[adj[i]] == UNKNOWN_LOCATION) {
+                pre[adj[i]] = location;
+                queue[front + size] = adj[i];
+                size++;
             }
         }
-        free(adj);
 
+        free(adj);
     }
-    dropQueue(Q);
     //We should never get here...
     return UNKNOWN_LOCATION;
-
 }
 
 static int randomLoc (HunterView gameState, int playerLoc, int player) {
