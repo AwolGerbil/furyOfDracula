@@ -84,12 +84,12 @@ void decideMove (HunterView gameState) {
             bestMove = playerLoc;
         }
     }
-    
+
     int trail[MEGA_TRAIL_SIZE];
     getMegaHistory (gameState, player, trail);
-    
+
     for (i = 0; i < MEGA_TRAIL_SIZE && trail[i] > 70; i++);
-    
+
     if (i >= 10) {
         printf("LETS RESEARCH");
         bestMove = playerLoc;
@@ -140,7 +140,7 @@ static int bFS (HunterView gameState, int dest, int curr, int player) {
             return location;
         }
 
-        adj = connectedLocations(gameState, &numAdj, location, player, getRound(gameState), 1, 1, 0);
+        adj = connectedLocations(gameState, &numAdj, location, player, getRound(gameState), 1, 1, 1);
         for (i = 0; i < numAdj; i++) {
             if (pre[adj[i]] == UNKNOWN_LOCATION) {
                 pre[adj[i]] = location;
