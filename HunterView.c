@@ -39,7 +39,7 @@ static void makeGraph (HunterView hv);
 static void canReachInN (HunterView currentView, LocationID start, int locs[], int n, int type);
 
 typedef struct hunterView {
-    char turns; // Number of Turns
+    int turns; // Number of Turns
     int score; // Current Score
 
     // Move Tracker
@@ -91,6 +91,16 @@ HunterView newHunterView (char* pastPlays, playerMessage messages[]) {
         hv->possLoc[0][i] = 1;
     }
 
+    //Initialise adjacent matrix
+    for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
+        for (j = 0; j < NUM_MAP_LOCATIONS; j++) {
+            hv->adjMatrix[i][j] = NO_EDGE;
+        }
+    }
+
+    // Populate Adjacency Matrix
+    makeGraph(hv);
+
     // Iterate through Player Turns
     int turn, round;
 
@@ -103,16 +113,6 @@ HunterView newHunterView (char* pastPlays, playerMessage messages[]) {
             hunterMove(hv, &pastPlays[turn * 8], round);
         }
     }
-
-    //Initialise adjacent matrix
-    for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
-        for (j = 0; j < NUM_MAP_LOCATIONS; j++) {
-            hv->adjMatrix[i][j] = NO_EDGE;
-        }
-    }
-
-    // Populate Adjacency Matrix
-    makeGraph(hv);
 
     return hv;
 }
@@ -301,7 +301,6 @@ static void hunterMove (HunterView hv, char* play, int round) {
     }
 
     hv->move[hunter][round] = currMove;
-
     hv->location[hunter][round] = currLocation;
 
     // Update Health if Resting
@@ -377,10 +376,10 @@ static void addLink (HunterView hv, int start, int finish, int type) {
 
 static int playerTurns (HunterView hv, int player) {
     if (player < getCurrentPlayer(hv)) {
-        //If the player has not played in this round:
+        // Player has played in this round:
         return getRound(hv) + 1;
     } else {
-        //Player has played in this round:
+        // If the player has not played in this round:
         return getRound(hv);
     }
 }
@@ -404,11 +403,10 @@ int getScore (HunterView currentView) {
 }
 
 int getHealth (HunterView currentView, PlayerID player) {
-
     if (playerTurns(currentView, player) == 0) {
-        if (player == PLAYER_DRACULA){
+        if (player == PLAYER_DRACULA) {
             return GAME_START_BLOOD_POINTS;
-        }else{
+        } else {
             return GAME_START_HUNTER_LIFE_POINTS;
         }
     } else {
