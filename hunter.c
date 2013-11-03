@@ -96,7 +96,7 @@ void decideMove (HunterView gameState) {
     }
 
     printf("HERES MY TURN!!!\n");
-    //registerBestPlay(locCode(bestMove), "hmmmm");
+    registerBestPlay(locCode(bestMove), "hmmmm");
     printf("%s, hmmm\n", locCode(bestMove));
 }
 
